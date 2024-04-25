@@ -48,5 +48,4 @@ except KeyboardInterrupt:
     # Clean up GPIO
     GPIO.cleanup()
 
-    #CHANGE done to check the CICD pipeline (Github actions)
-    #Test CICD test2
+    #Updated code for CICD

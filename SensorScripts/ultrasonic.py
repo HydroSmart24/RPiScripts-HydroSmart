@@ -49,3 +49,5 @@ except KeyboardInterrupt:
     GPIO.cleanup()
 
     #Updated code for CICD
+
+    #Write a seperate function to get the daily consumption 

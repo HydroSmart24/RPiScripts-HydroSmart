@@ -37,17 +37,43 @@ def get_distance():
 
     return distance
 
-try:
-    while True:
-        # Get distance
-        dist = get_distance()
-        print("Distance: {:.2f} cm".format(dist))
-        time.sleep(10)  # Print the reading every 10 seconds
+def event_trigger(threshold_distance):
+    """
+    Implement event-based trigger system.
+    """
+    last_distance = None
 
-except KeyboardInterrupt:
-    # Clean up GPIO
-    GPIO.cleanup()
+    try:
+        while True:
+            # Get current distance
+            current_distance = get_distance()
 
-    #Updated code for CICD
+            # Check if last_distance is None
+            if last_distance is None:
+                last_distance = current_distance
+                continue  # Skip comparison in the first iteration
 
-    #Write a seperate function to get the daily consumption 
+            # Calculate the difference in distance
+            distance_difference = abs(current_distance - last_distance)
+
+            # If the difference is less than or equal to 45.00 cm, continue to the next iteration
+            if distance_difference <= threshold_distance:
+                continue
+
+            # Otherwise, print the actual difference
+            print("Distance changed by {:.2f} cm".format(distance_difference))
+            
+            last_distance = current_distance
+
+            # Sleep for a short interval before taking the next measurement
+            time.sleep(1)  # Adjust as needed
+
+    except KeyboardInterrupt:
+        # Clean up GPIO
+        GPIO.cleanup()
+
+# Define threshold distance for event triggering
+threshold_distance = 45.0  # Adjust as needed
+
+# Start event trigger system
+event_trigger(threshold_distance)

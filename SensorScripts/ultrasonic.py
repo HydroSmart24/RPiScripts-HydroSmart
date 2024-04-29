@@ -77,3 +77,5 @@ threshold_distance = 45.0  # Adjust as needed
 
 # Start event trigger system
 event_trigger(threshold_distance)
+
+#test CICD

@@ -1,5 +1,16 @@
 import RPi.GPIO as GPIO
 import time
+import firebase_admin
+from firebase_admin import credentials, firestore 
+import os
+
+# Path to the Firebase service acccount JSON file
+firebase_credentials_file = os.path.join(os.path.dirname(__file__), 'Firebase', 'serviceAccountKey.json')
+
+# Initialize Firebase Admin SDK with service account credentials
+cred = credentials.Certificate(firebase_credentials_file)
+firebase_admin.initialize_app(cred)
+db = firestore.client()
 
 # Set GPIO mode (BCM mode)
 GPIO.setmode(GPIO.BCM)
@@ -77,5 +88,3 @@ threshold_distance = 45.0  # Adjust as needed
 
 # Start event trigger system
 event_trigger(threshold_distance)
-
-#test CICD

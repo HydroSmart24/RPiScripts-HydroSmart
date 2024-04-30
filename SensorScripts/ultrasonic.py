@@ -77,7 +77,7 @@ def event_trigger(threshold_distance):
             last_distance = current_distance
 
             # Sleep for a short interval before taking the next measurement
-            time.sleep(1)  
+            time.sleep(5)  
 
     except KeyboardInterrupt:
         # Clean up GPIO

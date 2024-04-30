@@ -44,7 +44,7 @@ def get_distance():
     elapsed_time = stop_time - start_time
 
     # Calculate distance (in cm)
-    distance = (elapsed_time * 34300) / 2
+    distance = int((elapsed_time * 34300) / 2)
 
     return distance
 

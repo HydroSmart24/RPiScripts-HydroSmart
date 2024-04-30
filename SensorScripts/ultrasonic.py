@@ -45,6 +45,16 @@ def get_distance():
 
     return distance
 
+
+def store_average_distance(average_distance):
+   
+    doc_ref = db.collection('avgDistance').document()
+    doc_ref.set({
+        'distance': average_distance,
+        'time': firestore.SERVER_TIMESTAMP
+    })
+
+
 def event_trigger(threshold_distance):
     last_distance = None
     distance_list = []
@@ -73,6 +83,7 @@ def event_trigger(threshold_distance):
             if elapsed_time >= 180:  # 180 seconds = 3 minutes
                 avg_distance = get_most_common_distances(distance_list)
                 print("Average of the 3 most common distances: {:.2f} cm".format(avg_distance))
+                store_average_distance(avg_distance)   #store the average distance in the database
                 distance_list.clear()
                 start_time = time.time()
 

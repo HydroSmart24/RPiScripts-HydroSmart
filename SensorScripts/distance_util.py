@@ -8,6 +8,6 @@ def get_most_common_distances(distances):
     print("Most common distances:", most_common)
 
     total_distance = sum(dist for dist, _ in most_common)
-    avg_distance = total_distance / 3  #average of the most common occurred
+    avg_distance = int(total_distance / 3)  #average of the most common occurred
 
     return avg_distance

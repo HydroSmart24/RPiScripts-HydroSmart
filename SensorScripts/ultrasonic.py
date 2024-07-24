@@ -77,7 +77,7 @@ def event_trigger(threshold_distance):
             distance_list.append(distance_difference)
             last_distance = current_distance
 
-            time.sleep(5)  
+            time.sleep(2)  
 
             elapsed_time = time.time() - start_time
             if elapsed_time >= 180:  # 180 seconds = 3 minutes

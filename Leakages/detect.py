@@ -1,4 +1,5 @@
 import time
+import random
 
 def print_readings():
     distance_reading = 40  # Starting distance
@@ -7,8 +8,10 @@ def print_readings():
     while distance_reading <= 60:
         print(f"Distance reading: {distance_reading} cm")
         print(f"Water flow rate: {flow_rate} cm")
-        distance_reading += 2
-        time.sleep(3)  # Wait for 1 second before the next reading
+        distance = random.randint(1,3)
+        distance_reading += distance
+        sleep_time = random.randint(1, 5)  # Get a random sleep time between 1 and 5 seconds
+        time.sleep(sleep_time)
 
 if __name__ == "__main__":
     print_readings()

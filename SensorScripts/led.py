@@ -31,3 +31,4 @@ except KeyboardInterrupt:
     #UPDATE CODE TO TEST  CI/CD PIPELINE
 
     #TEST Connection
+    #TEST all scripts

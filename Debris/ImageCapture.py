@@ -33,14 +33,14 @@ def capture_image(image_path="output_image.jpg", retries=3):
 
 def upload_to_firebase(image_path):
     try:
-        # Assuming you want to store the image in Firebase Storage
-        storage_path = f'images/{os.path.basename(image_path)}'
-        storage_ref = db.collection('images').document(storage_path)
+        # Create a unique document ID (or use the image name) in the "images" collection
+        document_id = os.path.splitext(os.path.basename(image_path))[0]
+        doc_ref = db.collection('images').document(document_id)
         
         # Store image metadata or reference in Firestore
-        storage_ref.set({'image_path': storage_path})
+        doc_ref.set({'image_path': image_path})
         
-        print(f"Image metadata uploaded to Firestore: {storage_path}")
+        print(f"Image metadata uploaded to Firestore: {image_path}")
     except Exception as e:
         print(f"Failed to upload image metadata to Firestore: {e}")
 

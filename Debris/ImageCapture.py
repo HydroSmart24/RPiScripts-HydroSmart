@@ -1,10 +1,15 @@
 import os
 import subprocess
-import pyrebase
+import firebase_admin
+from firebase_admin import credentials, firestore
 
-# Initialize Firebase using serviceAccountKey.json
-firebase = pyrebase.initialize_app()
-storage = firebase.storage()
+# Path to the Firebase service account JSON file
+firebase_credentials_file = os.path.join(os.path.dirname(__file__), '..', 'Firebase', 'serviceAccountKey.json')
+
+# Initialize Firebase Admin SDK with service account credentials
+cred = credentials.Certificate(firebase_credentials_file)
+firebase_admin.initialize_app(cred)
+db = firestore.client()
 
 def capture_image(image_path="output_image.jpg", retries=3):
     command = [
@@ -28,10 +33,16 @@ def capture_image(image_path="output_image.jpg", retries=3):
 
 def upload_to_firebase(image_path):
     try:
-        storage.child(image_path).put(image_path)
-        print(f"Image uploaded to Firebase: {image_path}")
+        # Assuming you want to store the image in Firebase Storage
+        storage_path = f'images/{os.path.basename(image_path)}'
+        storage_ref = db.collection('images').document(storage_path)
+        
+        # Store image metadata or reference in Firestore
+        storage_ref.set({'image_path': storage_path})
+        
+        print(f"Image metadata uploaded to Firestore: {storage_path}")
     except Exception as e:
-        print(f"Failed to upload image to Firebase: {e}")
+        print(f"Failed to upload image metadata to Firestore: {e}")
 
 def main():
     image_path = "output_image.jpg"

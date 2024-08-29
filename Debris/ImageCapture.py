@@ -16,6 +16,12 @@ firebase_admin.initialize_app(cred, {
 db = firestore.client()
 bucket = storage.bucket()
 
+def generate_unique_filename(base_name):
+    """Generate a unique filename by appending a UUID to the base name."""
+    name, ext = os.path.splitext(base_name)
+    unique_name = f"{name}_{uuid.uuid4().hex}{ext}"
+    return unique_name
+
 def capture_image(image_path="output_image.jpg", retries=3):
     command = [
         "ffmpeg", "-f", "v4l2", "-input_format", "mjpeg", "-video_size", "640x480",
@@ -36,22 +42,10 @@ def capture_image(image_path="output_image.jpg", retries=3):
     print("Failed to capture image after all retries.")
     return False
 
-def generate_unique_filename(base_name):
-    """Generate a unique filename by appending a UUID to the base name."""
-    name, ext = os.path.splitext(base_name)
-    unique_name = f"{name}_{uuid.uuid4().hex}{ext}"
-    return unique_name
-
 def upload_to_firebase(image_path):
     try:
-        # Check if the image already exists in Firebase Storage
-        blob = bucket.blob(f'images/{os.path.basename(image_path)}')
-        if blob.exists():
-            # Generate a new unique filename if the image already exists
-            image_path = generate_unique_filename(image_path)
-            blob = bucket.blob(f'images/{os.path.basename(image_path)}')
-
         # Upload the image file to Firebase Storage
+        blob = bucket.blob(f'images/{os.path.basename(image_path)}')
         blob.upload_from_filename(image_path)
         blob.make_public()  # Optional: Make the file publicly accessible
 
@@ -69,7 +63,9 @@ def upload_to_firebase(image_path):
         print(f"Failed to upload image to Firebase: {e}")
 
 def main():
-    image_path = "output_image.jpg"
+    # Generate a unique filename before capturing the image
+    image_path = generate_unique_filename("output_image.jpg")
+    
     if capture_image(image_path):
         upload_to_firebase(image_path)
 

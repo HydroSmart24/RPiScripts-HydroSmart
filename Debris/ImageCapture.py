@@ -12,6 +12,7 @@ cred = credentials.Certificate(firebase_credentials_file)
 firebase_admin.initialize_app(cred, {
     'storageBucket': 'rpiwaterconsumption.appspot.com/images'
 })
+
 db = firestore.client()
 bucket = storage.bucket()
 

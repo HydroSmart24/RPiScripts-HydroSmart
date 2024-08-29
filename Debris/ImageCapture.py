@@ -9,7 +9,7 @@ firebase_credentials_file = os.path.join(os.path.dirname(__file__), '..', 'Fireb
 # Initialize Firebase Admin SDK with service account credentials
 cred = credentials.Certificate(firebase_credentials_file)
 firebase_admin.initialize_app(cred, {
-    'storageBucket': 'gs://rpiwaterconsumption.appspot.com'
+    'storageBucket': 'rpiwaterconsumption.appspot.com'
 })
 db = firestore.client()
 bucket = storage.bucket()

@@ -1,15 +1,18 @@
 import os
 import subprocess
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import credentials, firestore, storage
 
 # Path to the Firebase service account JSON file
 firebase_credentials_file = os.path.join(os.path.dirname(__file__), '..', 'Firebase', 'serviceAccountKey.json')
 
 # Initialize Firebase Admin SDK with service account credentials
 cred = credentials.Certificate(firebase_credentials_file)
-firebase_admin.initialize_app(cred)
+firebase_admin.initialize_app(cred, {
+    'storageBucket': 'gs://rpiwaterconsumption.appspot.com'
+})
 db = firestore.client()
+bucket = storage.bucket()
 
 def capture_image(image_path="output_image.jpg", retries=3):
     command = [
@@ -33,16 +36,23 @@ def capture_image(image_path="output_image.jpg", retries=3):
 
 def upload_to_firebase(image_path):
     try:
-        # Create a unique document ID (or use the image name) in the "images" collection
+        # Upload the image file to Firebase Storage
+        blob = bucket.blob(f'images/{os.path.basename(image_path)}')
+        blob.upload_from_filename(image_path)
+        blob.make_public()  # Optional: Make the file publicly accessible
+
+        # Get the public URL of the image
+        image_url = blob.public_url
+        print(f"Image uploaded to Firebase Storage: {image_url}")
+
+        # Store the image URL in Firestore
         document_id = os.path.splitext(os.path.basename(image_path))[0]
         doc_ref = db.collection('images').document(document_id)
-        
-        # Store image metadata or reference in Firestore
-        doc_ref.set({'image_path': image_path})
-        
-        print(f"Image metadata uploaded to Firestore: {image_path}")
+        doc_ref.set({'image_url': image_url})
+
+        print(f"Image URL uploaded to Firestore: {image_url}")
     except Exception as e:
-        print(f"Failed to upload image metadata to Firestore: {e}")
+        print(f"Failed to upload image to Firebase: {e}")
 
 def main():
     image_path = "output_image.jpg"

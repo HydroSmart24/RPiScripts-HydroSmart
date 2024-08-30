@@ -1,5 +1,16 @@
 import serial
 import time
+import os
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+# Path to the Firebase service account JSON file
+firebase_credentials_file = os.path.join(os.path.dirname(__file__), '..', 'Firebase', 'serviceAccountKey.json')
+
+# Initialize Firebase Admin SDK with service account credentials
+cred = credentials.Certificate(firebase_credentials_file)
+firebase_admin.initialize_app(cred)
+db = firestore.client()
 
 # Open serial port
 ser = serial.Serial('/dev/ttyACM0', 9600)  # Adjust the port and baud rate as needed
@@ -8,6 +19,14 @@ ser = serial.Serial('/dev/ttyACM0', 9600)  # Adjust the port and baud rate as ne
 flow_started = False
 start_time = 0
 total_flow = 0.0
+
+def update_firebase(consumed_amount):
+    """Update Firebase with the consumed amount and timestamp."""
+    doc_ref = db.collection('dailyConsumption').document()
+    doc_ref.set({
+        'timestamp': firestore.SERVER_TIMESTAMP,
+        'consumed_liters': consumed_amount
+    })
 
 while True:
     line = ser.readline().decode('utf-8').strip()
@@ -40,6 +59,7 @@ while True:
                 flow_started = False
                 if total_flow > 0:
                     print(f"Total consumed: {total_flow:.2f} liters")
+                    update_firebase(total_flow)
                 total_flow = 0.0
 
         except (ValueError, IndexError):

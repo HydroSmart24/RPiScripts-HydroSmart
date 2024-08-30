@@ -24,7 +24,7 @@ def update_firebase(consumed_amount):
     doc_ref = db.collection('dailyConsumption').document()
     doc_ref.set({
         'timestamp': firestore.SERVER_TIMESTAMP,
-        'consumed_liters': consumed_amount
+        'consumed_liters': round(consumed_amount, 2)  # Ensure the value is rounded to 2 decimal places
     })
 
 while True:
@@ -57,6 +57,7 @@ while True:
                 # Stop the timer and finalize the flow calculation
                 flow_started = False
                 if total_flow > 0:
+                    total_flow = round(total_flow, 2)  # Round the total flow to 2 decimal places
                     print(f"Total consumed: {total_flow:.2f} liters")
                     update_firebase(total_flow)
                     print("Consumption sent to Database")  # Print after sending to Firebase

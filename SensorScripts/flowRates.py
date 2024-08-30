@@ -21,7 +21,6 @@ start_time = 0
 total_flow = 0.0
 
 def update_firebase(consumed_amount):
-    """Update Firebase with the consumed amount and timestamp."""
     doc_ref = db.collection('dailyConsumption').document()
     doc_ref.set({
         'timestamp': firestore.SERVER_TIMESTAMP,
@@ -60,6 +59,7 @@ while True:
                 if total_flow > 0:
                     print(f"Total consumed: {total_flow:.2f} liters")
                     update_firebase(total_flow)
+                    print("Consumption sent to Database")  # Print after sending to Firebase
                 total_flow = 0.0
 
         except (ValueError, IndexError):

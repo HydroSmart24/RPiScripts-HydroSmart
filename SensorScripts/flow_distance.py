@@ -20,12 +20,23 @@ flow_started = False
 start_time = 0
 total_flow = 0.0
 
+# Variable to track time for distance updates
+distance_start_time = time.time()
+
 def update_firebase(consumed_amount):
     doc_ref = db.collection('dailyConsumption').document()
     doc_ref.set({
         'timestamp': firestore.SERVER_TIMESTAMP,
         'consumed_liters': round(consumed_amount, 2)  # Ensure the value is rounded to 2 decimal places
     })
+
+def send_distance_to_firebase(distance):
+    doc_ref = db.collection('avgDistance').document()
+    doc_ref.set({
+        'time': firestore.SERVER_TIMESTAMP,
+        'distance': round(distance, 2)
+    })
+    print(f"Distance {distance:.2f} cm sent to Firebase")
 
 while True:
     line = ser.readline().decode('utf-8').strip()
@@ -70,6 +81,11 @@ while True:
 
             # Print the current distance reading
             print(f"Current Distance: {distance} cm")
+
+            # Check if 5 minutes have passed to send the distance to Firebase
+            if (time.time() - distance_start_time) >= 300:
+                send_distance_to_firebase(distance)
+                distance_start_time = time.time()  # Reset the timer for the next 5-minute interval
 
     except (ValueError, IndexError):
         # Handle any potential parsing errors

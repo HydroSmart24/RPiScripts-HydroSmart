@@ -38,7 +38,7 @@ def send_distance_to_firebase(distance):
         'time': firestore.SERVER_TIMESTAMP,
         'distance': round(distance, 2)
     })
-    print(f"Distance {distance:.2f} cm sent to Firebase")
+    print(f"---------------Distance {distance:.2f} cm sent to Firebase---------------")
 
 def detect_leakage():
     doc_ref = db.collection('leakageDetect').document()
@@ -46,7 +46,7 @@ def detect_leakage():
         'timestamp': firestore.SERVER_TIMESTAMP,
         'status': 'detected'
     })
-    print("Leakage detected and reported to Firebase")
+    print("---------------Leakage detected and reported---------------")
 
 while True:
     line = ser.readline().decode('utf-8').strip()
@@ -79,7 +79,7 @@ while True:
                 flow_started = False
                 if total_flow > 0:
                     total_flow = round(total_flow, 2)  # Round the total flow to 2 decimal places
-                    print(f"Total consumed: {total_flow:.2f} liters")
+                    print(f"---------------Total consumed: {total_flow:.2f} liters---------------")
                     update_firebase(total_flow)
                     print("Consumption sent to Database")  # Print after sending to Firebase
                 total_flow = 0.0

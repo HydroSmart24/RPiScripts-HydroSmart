@@ -1,11 +1,10 @@
-import RPi.GPIO as GPIO
+import serial
 import time
-import firebase_admin
-from firebase_admin import credentials, firestore 
 import os
-from distance_util import get_most_common_distances
+import firebase_admin
+from firebase_admin import credentials, firestore
 
-# Path to the Firebase service acccount JSON file
+# Path to the Firebase service account JSON file
 firebase_credentials_file = os.path.join(os.path.dirname(__file__), '..', 'Firebase', 'serviceAccountKey.json')
 
 # Initialize Firebase Admin SDK with service account credentials
@@ -13,85 +12,53 @@ cred = credentials.Certificate(firebase_credentials_file)
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
+# Open serial port
+ser = serial.Serial('/dev/ttyACM0', 9600)  # Adjust the port and baud rate as needed
 
-GPIO.setmode(GPIO.BCM)
-
-TRIG = 23
-ECHO = 24
-
-GPIO.setup(TRIG, GPIO.OUT)
-GPIO.setup(ECHO, GPIO.IN)
-
-def get_distance():
-    # Set trigger to HIGH for 10 microseconds
-    GPIO.output(TRIG, True)
-    time.sleep(0.00001)
-    GPIO.output(TRIG, False)
-
-    start_time = time.time()
-    stop_time = time.time()
-
-  
-    while GPIO.input(ECHO) == 0:
-        start_time = time.time()
-
-  
-    while GPIO.input(ECHO) == 1:
-        stop_time = time.time()
-
-    elapsed_time = stop_time - start_time
-
-    distance = int((elapsed_time * 34300) / 2)
-
-    return distance
-
-
-def store_average_distance(average_distance):
-   
+def send_to_firebase(avg_distance):
+    # Create a document in the 'avgDistance' collection
     doc_ref = db.collection('avgDistance').document()
     doc_ref.set({
-        'distance': average_distance,
-        'time': firestore.SERVER_TIMESTAMP
+        'time': firestore.SERVER_TIMESTAMP,  # Use server timestamp for accuracy
+        'distance': avg_distance
     })
+    print(f"Sent average distance {avg_distance:.2f} cm to Firebase")
 
+# Variables for timing
+start_time = time.time()
+distance_readings = []
 
-def event_trigger(threshold_distance):
-    last_distance = None
-    distance_list = []
-    start_time = time.time()
+while True:
+    line = ser.readline().decode('utf-8').strip()
 
-    try:
-        while True:
-            current_distance = get_distance()
+    if 'Distance:' in line:
+        try:
+            # Extract distance
+            distance_str = line.split('Distance: ')[1].split(' cm')[0]
+            distance = float(distance_str)
 
-            if last_distance is None:
-                last_distance = current_distance
-                continue
+            # Print the current distance reading every 10 seconds
+            print(f"Current Distance: {distance} cm")
+            distance_readings.append(distance)
 
-            distance_difference = abs(current_distance - last_distance)
+            # Sleep for 10 seconds
+            time.sleep(10)
 
-            if distance_difference <= threshold_distance:
-                continue
+            # Check if 5 minutes have passed
+            if (time.time() - start_time) >= 300:
+                if distance_readings:
+                    # Calculate the average distance over the 5 minutes
+                    avg_distance = sum(distance_readings) / len(distance_readings)
 
-            print("Distance changed by {:.2f} cm".format(distance_difference))
-            distance_list.append(distance_difference)
-            last_distance = current_distance
+                    # Send the average distance to Firebase
+                    send_to_firebase(avg_distance)
 
-            time.sleep(2)  
+                    # Print log after sending to Firebase
+                    print(f"Average distance of {avg_distance:.2f} cm sent to Firebase at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
-            elapsed_time = time.time() - start_time
-            if elapsed_time >= 180:  # 180 seconds = 3 minutes
-                avg_distance = get_most_common_distances(distance_list)
-                print("Average of the 3 most common distances: {:.2f} cm".format(avg_distance))
-                store_average_distance(avg_distance)   #store the average distance in the database
-                distance_list.clear()
-                start_time = time.time()
+                    # Reset the timer and readings list
+                    start_time = time.time()
+                    distance_readings = []
 
-    except KeyboardInterrupt:
-        GPIO.cleanup()
-
-
-threshold_distance = 45.0
-
-
-event_trigger(threshold_distance)
+        except (ValueError, IndexError):
+            print("Received invalid distance data:", line)

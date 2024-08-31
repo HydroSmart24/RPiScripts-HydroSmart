@@ -19,9 +19,11 @@ ser = serial.Serial('/dev/ttyACM0', 9600)  # Adjust the port and baud rate as ne
 flow_started = False
 start_time = 0
 total_flow = 0.0
+last_flow_rate = 0.0
 
 # Variable to track time for distance updates
 distance_start_time = time.time()
+last_distance = 0.0
 
 def update_firebase(consumed_amount):
     doc_ref = db.collection('dailyConsumption').document()
@@ -37,6 +39,14 @@ def send_distance_to_firebase(distance):
         'distance': round(distance, 2)
     })
     print(f"Distance {distance:.2f} cm sent to Firebase")
+
+def detect_leakage():
+    doc_ref = db.collection('leakageDetect').document()
+    doc_ref.set({
+        'timestamp': firestore.SERVER_TIMESTAMP,
+        'status': 'detected'
+    })
+    print("Leakage detected and reported to Firebase")
 
 while True:
     line = ser.readline().decode('utf-8').strip()
@@ -74,6 +84,9 @@ while True:
                     print("Consumption sent to Database")  # Print after sending to Firebase
                 total_flow = 0.0
 
+            # Update the last flow rate
+            last_flow_rate = flow_rate
+
         elif 'Distance:' in line:
             # Extract distance
             distance_str = line.split('Distance: ')[1].split(' cm')[0]
@@ -86,6 +99,13 @@ while True:
             if (time.time() - distance_start_time) >= 300:
                 send_distance_to_firebase(distance)
                 distance_start_time = time.time()  # Reset the timer for the next 5-minute interval
+
+            # Detect significant distance increase with no flow (leakage detection)
+            if last_flow_rate == 0 and (distance - last_distance) > 5:  # Adjust the threshold as needed
+                detect_leakage()
+
+            # Update the last distance
+            last_distance = distance
 
     except (ValueError, IndexError):
         # Handle any potential parsing errors

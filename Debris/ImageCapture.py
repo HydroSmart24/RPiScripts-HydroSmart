@@ -3,6 +3,7 @@ import subprocess
 import firebase_admin
 from firebase_admin import credentials, firestore, storage
 import uuid  # To generate unique filenames
+from datetime import datetime
 
 # Path to the Firebase service account JSON file
 firebase_credentials_file = os.path.join(os.path.dirname(__file__), '..', 'Firebase', 'serviceAccountKey.json')
@@ -44,12 +45,12 @@ def capture_image(image_path="output_image.jpg", retries=3):
 
 def upload_to_firebase(image_path):
     try:
-        # Generate a timestamp
-        timestamp = firestore.SERVER_TIMESTAMP  # Firestore server-side timestamp
+        # Get the current timestamp
+        timestamp = datetime.utcnow().isoformat()
 
         # Upload the image file to Firebase Storage with metadata
         blob = bucket.blob(f'images/{os.path.basename(image_path)}')
-        metadata = {"timestamp": str(timestamp)}  # Add metadata with timestamp
+        metadata = {"timestamp": timestamp}  # Add metadata with timestamp
         blob.upload_from_filename(image_path, content_type='image/jpeg')
         blob.metadata = metadata
         blob.patch()  # Apply the metadata
@@ -71,7 +72,6 @@ def upload_to_firebase(image_path):
         print(f"Image URL and metadata uploaded to Firestore: {image_url}")
     except Exception as e:
         print(f"Failed to upload image to Firebase: {e}")
-
 
 def main():
     # Generate a unique filename before capturing the image

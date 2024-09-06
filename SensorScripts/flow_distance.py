@@ -121,6 +121,8 @@ while True:
             turbidity_values.append(turbidity)  # Collect turbidity values for averaging
             print(f"Current Turbidity: {turbidity} NTU")
 
+            print(f"-----------------------------------")
+
         # Check if 10 minutes have passed to send average pH and turbidity to Firebase
         if (time.time() - ph_start_time) >= 600:
             if ph_values and turbidity_values:

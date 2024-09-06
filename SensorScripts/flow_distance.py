@@ -57,7 +57,8 @@ def send_filter_health_to_firebase(avg_ph, avg_turbidity):
     doc_ref.set({
         'timestamp': firestore.SERVER_TIMESTAMP,
         'ph': round(avg_ph, 2),
-        'turbidity': round(avg_turbidity, 2)
+        'turbidity': round(avg_turbidity, 2),
+        'expirationDate': firestore.SERVER_TIMESTAMP
     })
     print(f"---------------Average pH {avg_ph:.2f}, Average Turbidity {avg_turbidity:.2f} sent to Firebase---------------")
 

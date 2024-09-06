@@ -52,61 +52,63 @@ while True:
     line = ser.readline().decode('utf-8').strip()
 
     try:
+        # Handle flow rate
         if 'Flow rate:' in line:
-            # Extract flow rate
             flow_rate_str = line.split('Flow rate: ')[1].split(' L/min')[0]
             flow_rate = float(flow_rate_str)
-
-            # Print the current flow rate reading
             print(f"Current Flow Rate: {flow_rate} L/min")
 
             if flow_rate > 0 and not flow_started:
-                # Start the timer
                 start_time = time.time()
                 flow_started = True
                 total_flow = 0.0
 
             if flow_started:
-                # Calculate elapsed time in minutes
                 elapsed_time = (time.time() - start_time) / 60.0
-                # Add the flow during this time to the total flow
                 total_flow += flow_rate * elapsed_time
-                # Reset start time for the next interval
                 start_time = time.time()
 
             if flow_rate == 0 and flow_started:
-                # Stop the timer and finalize the flow calculation
                 flow_started = False
                 if total_flow > 0:
-                    total_flow = round(total_flow, 2)  # Round the total flow to 2 decimal places
+                    total_flow = round(total_flow, 2)
                     print(f"---------------Total consumed: {total_flow:.2f} liters---------------")
                     update_firebase(total_flow)
-                    print("Consumption sent to Database")  # Print after sending to Firebase
+                    print("Consumption sent to Database")
                 total_flow = 0.0
 
-            # Update the last flow rate
             last_flow_rate = flow_rate
 
+        # Handle distance
         elif 'Distance:' in line:
-            # Extract distance
             distance_str = line.split('Distance: ')[1].split(' cm')[0]
             distance = float(distance_str)
-
-            # Print the current distance reading
             print(f"Current Distance: {distance} cm")
 
-            # Check if 5 minutes have passed to send the distance to Firebase
             if (time.time() - distance_start_time) >= 300:
                 send_distance_to_firebase(distance)
-                distance_start_time = time.time()  # Reset the timer for the next 5-minute interval
+                distance_start_time = time.time()
 
-            # Detect significant distance increase with no flow (leakage detection)
-            if last_flow_rate == 0 and (distance - last_distance) > 5:  # Adjust the threshold as needed
+            if last_flow_rate == 0 and (distance - last_distance) > 5:
                 detect_leakage()
 
-            # Update the last distance
             last_distance = distance
 
+        # Handle pH Value
+        elif 'pH Value:' in line:
+            ph_str = line.split('pH Value: ')[1].split(',')[0]
+            voltage_str = line.split('Voltage: ')[1].split(' V')[0]
+            ph_value = float(ph_str)
+            ph_voltage = float(voltage_str)
+            print(f"Current pH Value: {ph_value}, Voltage: {ph_voltage} V")
+
+        # Handle Turbidity
+        elif 'Turbidity:' in line:
+            turbidity_str = line.split('Turbidity: ')[1].split(' NTU')[0]
+            voltage_str = line.split('Voltage: ')[1].split(' V')[0]
+            turbidity = float(turbidity_str)
+            turbidity_voltage = float(voltage_str)
+            print(f"Current Turbidity: {turbidity} NTU, Voltage: {turbidity_voltage} V")
+
     except (ValueError, IndexError):
-        # Handle any potential parsing errors
         print("Received invalid data:", line)

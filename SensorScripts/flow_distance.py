@@ -92,26 +92,26 @@ def upload_to_firebase(image_path):
         print(f"Failed to upload image to Firebase: {e}")
 
 
-# # Function to handle relay state change
-# def handle_relay_state_change(new_state):
-#     global previous_relay_state, current_relay_state
+# Function to handle relay state change
+def handle_relay_state_change(new_state):
+    global previous_relay_state, current_relay_state
     
-#     # Update current relay state
-#     current_relay_state = new_state
+    # Update current relay state
+    current_relay_state = new_state
     
-#     # Check if the state changed from 'ON' to 'OFF'
-#     if previous_relay_state == "ON" and current_relay_state == "OFF":
-#         print("Relay state changed from ON to OFF. Triggering image capture and upload.")
+    # Check if the state changed from 'ON' to 'OFF'
+    if previous_relay_state == "ON" and current_relay_state == "OFF":
+        print("Relay state changed from ON to OFF. Triggering image capture and upload.")
         
-#         # Generate a unique filename before capturing the image
-#         image_path = generate_unique_filename("output_image.jpg")
+        # Generate a unique filename before capturing the image
+        image_path = generate_unique_filename("output_image.jpg")
         
-#         # Capture and upload the image
-#         if capture_image(image_path):
-#             upload_to_firebase(image_path)
+        # Capture and upload the image
+        if capture_image(image_path):
+            upload_to_firebase(image_path)
     
-#     # Update previous state for the next comparison
-#     previous_relay_state = current_relay_state
+    # Update previous state for the next comparison
+    previous_relay_state = current_relay_state
 
 
 # Firebase update functions
@@ -213,8 +213,8 @@ while True:
             relay_state = line.split('Relay State: ')[1]
             print(f"Relay State: {relay_state}")
 
-            # # Trigger image capture when relay state changes from ON to OFF
-            # handle_relay_state_change(relay_state)
+            # Trigger image capture when relay state changes from ON to OFF
+            handle_relay_state_change(relay_state)
 
             print(f"-----------------------------------")
 

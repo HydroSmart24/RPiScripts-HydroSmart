@@ -52,21 +52,38 @@ def capture_image(image_path="output_image.jpg", retries=3):
 # Function to upload the image to Firebase Storage and Firestore
 def upload_to_firebase(image_path):
     try:
+        # Get the current timestamp
         timestamp = datetime.utcnow().isoformat()
+
+        # Upload the image file to Firebase Storage with metadata
         blob = bucket.blob(f'images/{os.path.basename(image_path)}')
         metadata = {"timestamp": timestamp}
         blob.upload_from_filename(image_path, content_type='image/jpeg')
         blob.metadata = metadata
-        blob.patch()
+        blob.patch()  # Apply the metadata
+
+        # Make the file publicly accessible (optional)
         blob.make_public()
+
+        # Get the public URL of the image
         image_url = blob.public_url
 
+        # Store the image URL and metadata in Firestore
         doc_ref = db.collection('images').document(os.path.splitext(os.path.basename(image_path))[0])
         doc_ref.set({
             'image_url': image_url,
             'timestamp': timestamp
         })
+
         print(f"Image URL and metadata uploaded to Firestore: {image_url}")
+
+        # Delete the local file after successful upload
+        if os.path.exists(image_path):
+            os.remove(image_path)
+            print(f"Local file {image_path} deleted.")
+        else:
+            print(f"Local file {image_path} not found for deletion.")
+            
     except Exception as e:
         print(f"Failed to upload image to Firebase: {e}")
 

@@ -92,23 +92,33 @@ def upload_to_firebase(image_path):
         print(f"Failed to upload image to Firebase: {e}")
 
 
-# Function to handle relay state change
+# Variable to track the last time the relay state changed
+last_state_change_time = time.time()
+
+# Function to handle relay state change with debounce logic
 def handle_relay_state_change(new_state):
-    global previous_relay_state, current_relay_state
+    global previous_relay_state, current_relay_state, last_state_change_time
     
     # Update current relay state
     current_relay_state = new_state
     
     # Check if the state changed from 'ON' to 'OFF'
     if previous_relay_state == "ON" and current_relay_state == "OFF":
-        print("Relay state changed from ON to OFF. Triggering image capture and upload.")
         
-        # Generate a unique filename before capturing the image
-        image_path = generate_unique_filename("output_image.jpg")
-        
-        # Capture and upload the image
-        if capture_image(image_path):
-            upload_to_firebase(image_path)
+        # Ensure the state has remained OFF for at least 1 second (debounce logic)
+        current_time = time.time()
+        if current_time - last_state_change_time >= 2:  # 2 second debounce
+            print("Relay state changed from ON to OFF. Triggering image capture and upload.")
+            
+            # Generate a unique filename before capturing the image
+            image_path = generate_unique_filename("output_image.jpg")
+            
+            # Capture and upload the image
+            if capture_image(image_path):
+                upload_to_firebase(image_path)
+            
+            # Update the last state change time
+            last_state_change_time = current_time
     
     # Update previous state for the next comparison
     previous_relay_state = current_relay_state

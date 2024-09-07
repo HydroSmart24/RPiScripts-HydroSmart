@@ -42,18 +42,17 @@ def generate_unique_filename(base_name):
     return unique_name
 
 
-def capture_image(image_path="output_image.jpg", retries=10, delay=2):
+def capture_image(image_path="output_image.jpg", retries=10):
     command = [
         "ffmpeg", "-f", "v4l2", "-input_format", "mjpeg", "-video_size", "640x480",
-        "-i", "/dev/video0", "-vf", "format=yuv420p", "-vframes", "1", image_path
+        "-i", "/dev/video0", "-vf", "format=yuv420p", "-vframes", "1", "-update", "1", image_path
     ]
     
     attempt = 0
     while attempt < retries:
         try:
-            # Add a delay before each retry to ensure the camera is ready
-            time.sleep(delay)
-            subprocess.run(command, shell=True, check=True)
+            # Run the FFmpeg command to capture the image
+            subprocess.run(command, check=True)
             print(f"Image captured successfully: {image_path}")
             return True
         except subprocess.CalledProcessError:
@@ -62,6 +61,7 @@ def capture_image(image_path="output_image.jpg", retries=10, delay=2):
     
     print("Failed to capture image after all retries.")
     return False
+
 
 
 def upload_to_firebase(image_path):

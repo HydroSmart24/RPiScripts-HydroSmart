@@ -3,7 +3,7 @@ import serial
 import time
 import os
 import firebase_admin
-from firebase_admin import credentials, firestore, storage
+from firebase_admin import credentials, firestore
 import uuid  
 from datetime import datetime
 
@@ -15,7 +15,6 @@ cred = credentials.Certificate(firebase_credentials_file)
 firebase_admin.initialize_app(cred)
 
 db = firestore.client()
-bucket = storage.bucket()
 
 # Open serial port
 ser = serial.Serial('/dev/ttyACM0', 9600)  # Adjust the port and baud rate as needed

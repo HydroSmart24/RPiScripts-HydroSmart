@@ -124,6 +124,11 @@ while True:
 
             print(f"-----------------------------------")
 
+        # Handle Relay State
+        elif 'Relay State:' in line:
+            relay_state = line.split('Relay State: ')[1]
+            print(f"Relay State: {relay_state}")
+
         # Check if 10 minutes have passed to send average pH and turbidity to Firebase
         if (time.time() - ph_start_time) >= 600:
             if ph_values and turbidity_values:

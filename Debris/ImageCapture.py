@@ -70,6 +70,23 @@ def upload_to_firebase(image_path):
     except Exception as e:
         print(f"Failed to upload image to Firebase: {e}")
 
+# Function to check the latest distance from avgDistance collection
+def check_latest_distance():
+    try:
+        # Get the most recent document from avgDistance collection, sorted by time
+        docs = db.collection('avgDistance').order_by('time', direction=firestore.Query.DESCENDING).limit(1).get()
+        if docs:
+            latest_doc = docs[0]
+            distance = latest_doc.to_dict().get('distance', 100)  # Default to 100 if no value is found
+            print(f"Latest distance: {distance}")
+            return distance
+        else:
+            print("No documents found in avgDistance collection.")
+            return 100  # Default to 100 if no documents are found
+    except Exception as e:
+        print(f"Error retrieving latest distance: {e}")
+        return 100  # Default to 100 in case of an error
+
 # Firestore document listener function
 def on_snapshot(doc_snapshot, changes, read_time):
     for doc in doc_snapshot:
@@ -77,10 +94,15 @@ def on_snapshot(doc_snapshot, changes, read_time):
         print(f"Document state: {state}")
 
         if state == "OFF":
-            print("State changed to OFF. Capturing image...")
-            image_path = generate_unique_filename("output_image.jpg")
-            if capture_image(image_path):
-                upload_to_firebase(image_path)
+            print("State changed to OFF. Checking latest distance before capturing image...")
+            distance = check_latest_distance()  # Check the latest distance from avgDistance
+            if distance < 40:
+                print(f"Distance is {distance}, capturing image...")
+                image_path = generate_unique_filename("output_image.jpg")
+                if capture_image(image_path):
+                    upload_to_firebase(image_path)
+            else:
+                print(f"Distance is {distance}. Image capture skipped.")
         else:
             print(f"State is still {state}. No action taken.")
 

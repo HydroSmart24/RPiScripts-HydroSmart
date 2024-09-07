@@ -4,6 +4,7 @@ import firebase_admin
 from firebase_admin import credentials, firestore, storage
 import uuid  # To generate unique filenames
 from datetime import datetime
+import pytz  # For timezone handling
 
 # Path to the Firebase service account JSON file
 firebase_credentials_file = os.path.join(os.path.dirname(__file__), '..', 'Firebase', 'serviceAccountKey.json')
@@ -52,8 +53,9 @@ def capture_image(image_path="output_image.jpg", retries=3):
 # Function to upload the image to Firebase Storage and Firestore
 def upload_to_firebase(image_path):
     try:
-        # Get the current timestamp
-        timestamp = datetime.utcnow().isoformat()
+        # Get the current timestamp in local time
+        local_timezone = pytz.timezone('Asia/Colombo')  # Adjust to your local timezone
+        timestamp = datetime.now(local_timezone).isoformat()  # Local time with timezone info
 
         # Upload the image file to Firebase Storage with metadata
         blob = bucket.blob(f'images/{os.path.basename(image_path)}')

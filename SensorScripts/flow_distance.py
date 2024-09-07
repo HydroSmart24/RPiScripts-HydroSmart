@@ -53,7 +53,7 @@ def capture_image(image_path="output_image.jpg", retries=10, delay=2):
         try:
             # Add a delay before each retry to ensure the camera is ready
             time.sleep(delay)
-            subprocess.run(command, check=True)
+            subprocess.run(command, shell=True, check=True)
             print(f"Image captured successfully: {image_path}")
             return True
         except subprocess.CalledProcessError:

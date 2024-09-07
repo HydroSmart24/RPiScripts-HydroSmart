@@ -115,7 +115,7 @@ def on_snapshot(doc_snapshot, changes, read_time):
         if state == "OFF":
             print("State changed to OFF. Checking latest distance before capturing image...")
             distance = check_latest_distance()  # Check the latest distance from avgDistance
-            if distance < 40:
+            if distance <= 40:
                 print(f"Distance is {distance}, capturing image...")
                 image_path = generate_unique_filename("output_image.jpg")
                 if capture_image(image_path):

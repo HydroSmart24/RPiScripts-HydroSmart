@@ -115,7 +115,7 @@ import time
 virtual_env_python = "/home/hydrosmart/HydroRasp/venv/bin/python"
 
 # Path to the script you want to run
-script_path = "/home/hydrosmart/HydroRasp/actions-runner/_work/RPiScripts-HydroSmart/RPiScripts-HydroSmart/Debris/test_output.py"
+script_path = "/home/hydrosmart/HydroRasp/actions-runner/_work/RPiScripts-HydroSmart/RPiScripts-HydroSmart/Debris/ImageCapture.py"
 
 # Initialize previous_relay_state with a default value
 previous_relay_state = "OFF"  # Assuming relay starts in OFF state

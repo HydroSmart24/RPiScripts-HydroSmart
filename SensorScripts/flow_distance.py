@@ -114,12 +114,29 @@ def send_distance_to_firebase(distance):
         print(f"Error cleaning up avgDistance collection: {e}")
 
 def detect_leakage():
+    # Add new leakage detection document
     doc_ref = db.collection('leakageDetect').document()
     doc_ref.set({
         'timestamp': firestore.SERVER_TIMESTAMP,
         'status': 'detected'
     })
     print("---------------Leakage detected and reported---------------")
+
+    # Keep only the latest 3 documents in the collection
+    try:
+        # Fetch all documents in the leakageDetect collection, ordered by timestamp
+        docs = db.collection('leakageDetect').order_by('timestamp', direction=firestore.Query.DESCENDING).get()
+
+        # If there are more than 3 documents, delete the oldest ones
+        if len(docs) > 3:
+            # Iterate over documents, starting from the 4th one (index 3)
+            for doc in docs[3:]:
+                print(f"Deleting old document: {doc.id}")
+                db.collection('leakageDetect').document(doc.id).delete()
+        else:
+            print("Less than or equal to 3 documents. No deletion required.")
+    except Exception as e:
+        print(f"Error cleaning up leakageDetect collection: {e}")
 
 def send_filter_health_to_firebase(avg_ph, avg_turbidity):
     doc_ref = db.collection('filterHealth').document()

@@ -103,6 +103,27 @@ current_relay_state = None
 # Variable to track the last time the relay state changed
 last_state_change_time = time.time()
 
+
+
+# Path to the Python interpreter inside the virtual environment
+virtual_env_python = "/home/HydroRasp/venv/bin/python3"
+
+import subprocess
+import time
+
+# Path to the Python interpreter inside the virtual environment
+virtual_env_python = "/home/hydrosmart/HydroRasp/venv/bin/python"
+
+# Path to the script you want to run
+script_path = "/home/hydrosmart/HydroRasp/actions-runner/_work/RPiScripts-HydroSmart/RPiScripts-HydroSmart/Debris/ImageCapture.py"
+
+# Initialize previous_relay_state with a default value
+previous_relay_state = "OFF"  # Assuming relay starts in OFF state
+current_relay_state = None
+
+# Variable to track the last time the relay state changed
+last_state_change_time = time.time()
+
 # Function to handle relay state change with debounce logic
 def handle_relay_state_change(new_state):
     global previous_relay_state, current_relay_state, last_state_change_time
@@ -116,20 +137,22 @@ def handle_relay_state_change(new_state):
         # Ensure the state has remained OFF for at least 1 second (debounce logic)
         current_time = time.time()
         if current_time - last_state_change_time >= 1:  # 1 second debounce
-            print("Relay state changed from ON to OFF. Triggering image capture and upload.")
+            print("Relay state changed from ON to OFF. Running the Python script in the virtual environment.")
             
-            # Generate a unique filename before capturing the image
-            image_path = generate_unique_filename("output_image.jpg")
-            
-            # Capture and upload the image
-            if capture_image(image_path):
-                upload_to_firebase(image_path)
+            # Run the Python script using the interpreter from the virtual environment
+            try:
+                result = subprocess.run([virtual_env_python, script_path], check=True, capture_output=True, text=True)
+                print(f"Python script output: {result.stdout}")
+            except subprocess.CalledProcessError as e:
+                print(f"Failed to run the Python script. Error: {e.stderr}")
             
             # Update the last state change time
             last_state_change_time = current_time
     
     # Update previous state for the next comparison
     previous_relay_state = current_relay_state
+
+
 
 
 

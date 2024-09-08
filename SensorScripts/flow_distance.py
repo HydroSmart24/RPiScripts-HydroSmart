@@ -26,6 +26,9 @@ total_flow = 0.0
 last_flow_rate = 0.0
 
 # Variables to track distance and pH/Turbidity values
+initial_distance_at_zero_flow = None  
+monitoring_for_leakage = False
+last_distance = 0.0  
 distance_start_time = time.time()
 last_distance = 0.0
 ph_values = []
@@ -177,6 +180,13 @@ while True:
                     print("Consumption sent to Database")
                 total_flow = 0.0
 
+            # Handle leakage logic when flow rate is 0
+            if flow_rate == 0 and not monitoring_for_leakage:
+                # Start monitoring for leakage when flow becomes zero
+                initial_distance_at_zero_flow = last_distance
+                monitoring_for_leakage = True
+                print(f"Flow stopped. Monitoring for leakage with initial distance: {initial_distance_at_zero_flow:.2f} cm")
+
             last_flow_rate = flow_rate
 
         # Handle distance
@@ -189,8 +199,12 @@ while True:
                 send_distance_to_firebase(distance)
                 distance_start_time = time.time()
 
-            if last_flow_rate == 0 and (distance - last_distance) > 5:
-                detect_leakage()
+            # Check for leakage when monitoring is active and flow is 0
+            if monitoring_for_leakage and initial_distance_at_zero_flow is not None:
+                if distance - initial_distance_at_zero_flow >= 2:
+                    print(f"Distance increased by 2 cm. Detecting leakage...")
+                    detect_leakage()
+                    monitoring_for_leakage = False  # Stop monitoring after leakage is detected
 
             last_distance = distance
 

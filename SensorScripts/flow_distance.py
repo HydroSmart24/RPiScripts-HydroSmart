@@ -91,7 +91,8 @@ def send_consumption_firebase(consumed_amount):
 
 def send_distance_to_firebase(distance):
     global last_sent_distance
-    if last_sent_distance is None or abs(last_sent_distance - distance) >= 1:  # Compare the new distance with the last sent distance (you can adjust the threshold)
+    # Send the distance to Firebase every 30 seconds
+    if last_sent_distance is None or (time.time() - distance_last_sent_time) >= 30:  #every 30 seconds
         # Add new distance document
         doc_ref = db.collection('avgDistance').document()
         doc_ref.set({
@@ -100,6 +101,8 @@ def send_distance_to_firebase(distance):
         })
         last_sent_distance = distance  # Update the last sent distance
         print(f"---------------Distance {distance:.2f} cm sent to Firebase---------------")
+        global distance_last_sent_time
+        distance_last_sent_time = time.time()  # Reset the timer
 
     # Keep only the latest 3 documents in the collection
     try:
@@ -190,13 +193,12 @@ while True:
                 leakage_check_active = True  # Activate leakage check
                 last_flow_rate = flow_rate
 
-        # Handle distance
-        elif 'Distance:' in line:
-            distance_str = line.split('Distance: ')[1].split(' cm')[0]
-            distance = float(distance_str)
-            print(f"Current Distance: {distance} cm")
+            elif 'Distance:' in line:
+                distance_str = line.split('Distance: ')[1].split(' cm')[0]
+                distance = float(distance_str)
+                print(f"Current Distance: {distance} cm")
 
-            send_distance_to_firebase(distance)  # Send distance only if there's a change
+                send_distance_to_firebase(distance)  # Send distance to Firebase every 30 seconds
 
             if leakage_check_active:
                 if initial_distance_at_zero_flow is None:
@@ -204,7 +206,6 @@ while True:
                     print(f"Initialized distance for leakage check: {initial_distance_at_zero_flow:.2f} cm")
                 else:
                     check_for_leakage(distance)  # Continuously check for leakage
-
 
         # Handle pH Value
         elif 'pH Value:' in line:

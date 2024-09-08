@@ -28,8 +28,7 @@ last_flow_rate = 0.0
 initial_distance_at_zero_flow = None  # Track initial distance when flow rate goes to 0
 leakage_check_active = False  # Flag to check if leakage monitoring is active
 leakage_threshold = 1.0  # Minimum distance change (in cm) to detect leakage
-distance_last_sent_time = time.time()  # Track the time when the last distance was sent
-distance_interval = 120  # 2 minutes (in seconds) interval for sending distance to Firebase
+last_sent_distance = None  # Track the last sent distance to Firebase
 ph_values = []
 turbidity_values = []
 ph_start_time = time.time()
@@ -91,13 +90,16 @@ def send_consumption_firebase(consumed_amount):
     })
 
 def send_distance_to_firebase(distance):
-    # Add new distance document
-    doc_ref = db.collection('avgDistance').document()
-    doc_ref.set({
-        'time': firestore.SERVER_TIMESTAMP,
-        'distance': round(distance, 2)
-    })
-    print(f"---------------Distance {distance:.2f} cm sent to Firebase---------------")
+    global last_sent_distance
+    if last_sent_distance is None or abs(last_sent_distance - distance) >= 1:  # Compare the new distance with the last sent distance (you can adjust the threshold)
+        # Add new distance document
+        doc_ref = db.collection('avgDistance').document()
+        doc_ref.set({
+            'time': firestore.SERVER_TIMESTAMP,
+            'distance': round(distance, 2)
+        })
+        last_sent_distance = distance  # Update the last sent distance
+        print(f"---------------Distance {distance:.2f} cm sent to Firebase---------------")
 
     # Keep only the latest 3 documents in the collection
     try:
@@ -195,10 +197,7 @@ while True:
             distance = float(distance_str)
             print(f"Current Distance: {distance} cm")
 
-            # Send distance to Firebase every 2 minutes
-            if (time.time() - distance_last_sent_time) >= distance_interval:
-                send_distance_to_firebase(distance)
-                distance_last_sent_time = time.time()
+            send_distance_to_firebase(distance)  # Send distance only if there's a change
 
             if leakage_check_active:
                 if initial_distance_at_zero_flow is None:

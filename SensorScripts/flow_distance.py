@@ -28,6 +28,7 @@ last_flow_rate = 0.0
 # Variables to track distance and pH/Turbidity values
 distance_start_time = time.time()
 last_distance = 0.0
+previous_distances = []  # To store last 3 distance readings
 ph_values = []
 turbidity_values = []
 ph_start_time = time.time()
@@ -81,7 +82,7 @@ def handle_relay_state_change(new_state):
 
 
 # Firebase update functions
-def update_firebase(consumed_amount):
+def send_consumption_firebase(consumed_amount):
     doc_ref = db.collection('dailyConsumption').document()
     doc_ref.set({
         'timestamp': firestore.SERVER_TIMESTAMP,
@@ -148,6 +149,21 @@ def send_filter_health_to_firebase(avg_ph, avg_turbidity):
     })
     print(f"---------------Average pH {avg_ph:.2f}, Average Turbidity {avg_turbidity:.2f} sent to Firebase---------------")
 
+# Function to check for leakage based on distance increase and flow rate 0
+def check_for_leakage(distance):
+    global previous_distances, last_flow_rate
+    if last_flow_rate == 0:
+        previous_distances.append(distance)
+
+        # Keep only the last 3 distance readings
+        if len(previous_distances) > 3:
+            previous_distances.pop(0)
+
+        # Check if there's an increase in distance for all readings
+        if len(previous_distances) == 3 and previous_distances[0] < previous_distances[1] < previous_distances[2]:
+            print(f"Leakage detected! Distances: {previous_distances}")
+            detect_leakage()
+
 while True:
     line = ser.readline().decode('utf-8').strip()
 
@@ -173,7 +189,7 @@ while True:
                 if total_flow > 0:
                     total_flow = round(total_flow, 2)
                     print(f"---------------Total consumed: {total_flow:.2f} liters---------------")
-                    update_firebase(total_flow)
+                    send_consumption_firebase(total_flow)
                     print("Consumption sent to Database")
                 total_flow = 0.0
 
@@ -185,12 +201,11 @@ while True:
             distance = float(distance_str)
             print(f"Current Distance: {distance} cm")
 
-            if (time.time() - distance_start_time) >= 120:  #2 minutes
+            if (time.time() - distance_start_time) >= 120:  # 2 minutes
                 send_distance_to_firebase(distance)
                 distance_start_time = time.time()
 
-            if last_flow_rate == 0 and (distance - last_distance) > 2:
-                detect_leakage()
+            check_for_leakage(distance)  # Check for leakage
 
             last_distance = distance
 
@@ -213,7 +228,7 @@ while True:
             relay_state = line.split('Relay State: ')[1]
             print(f"Relay State: {relay_state}")
 
-             # Call the function to handle relay state change
+            # Call the function to handle relay state change
             handle_relay_state_change(relay_state)
 
             print(f"-----------------------------------")

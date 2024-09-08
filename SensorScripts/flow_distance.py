@@ -25,10 +25,10 @@ start_time = 0
 total_flow = 0.0
 last_flow_rate = 0.0
 
-# Variables to track distance and pH/Turbidity values
-distance_start_time = time.time()
-last_distance = 0.0
-previous_distances = []  # To store last 3 distance readings
+
+initial_distance_at_zero_flow = None  # Track initial distance when flow rate goes to 0
+leakage_check_active = False  # Flag to check if leakage monitoring is active
+leakage_threshold = 1.0  # Minimum distance change (in cm) to detect leakage
 ph_values = []
 turbidity_values = []
 ph_start_time = time.time()
@@ -114,6 +114,19 @@ def send_distance_to_firebase(distance):
     except Exception as e:
         print(f"Error cleaning up avgDistance collection: {e}")
 
+
+# Function to send average pH and turbidity values to Firebase
+def send_filter_health_to_firebase(avg_ph, avg_turbidity):
+    doc_ref = db.collection('filterHealth').document()
+    doc_ref.set({
+        'timestamp': firestore.SERVER_TIMESTAMP,
+        'ph': round(avg_ph, 2),
+        'turbidity': round(avg_turbidity, 2),
+        'expirationDate': firestore.SERVER_TIMESTAMP
+    })
+    print(f"---------------Average pH {avg_ph:.2f}, Average Turbidity {avg_turbidity:.2f} sent to Firebase---------------")
+
+
 def detect_leakage():
     # Add new leakage detection document
     doc_ref = db.collection('leakageDetect').document()
@@ -125,12 +138,8 @@ def detect_leakage():
 
     # Keep only the latest 3 documents in the collection
     try:
-        # Fetch all documents in the leakageDetect collection, ordered by timestamp
         docs = db.collection('leakageDetect').order_by('timestamp', direction=firestore.Query.DESCENDING).get()
-
-        # If there are more than 3 documents, delete the oldest ones
         if len(docs) > 3:
-            # Iterate over documents, starting from the 4th one (index 3)
             for doc in docs[3:]:
                 print(f"Deleting old document: {doc.id}")
                 db.collection('leakageDetect').document(doc.id).delete()
@@ -139,30 +148,21 @@ def detect_leakage():
     except Exception as e:
         print(f"Error cleaning up leakageDetect collection: {e}")
 
-def send_filter_health_to_firebase(avg_ph, avg_turbidity):
-    doc_ref = db.collection('filterHealth').document()
-    doc_ref.set({
-        'timestamp': firestore.SERVER_TIMESTAMP,
-        'ph': round(avg_ph, 2),
-        'turbidity': round(avg_turbidity, 2),
-        'expirationDate': firestore.SERVER_TIMESTAMP
-    })
-    print(f"---------------Average pH {avg_ph:.2f}, Average Turbidity {avg_turbidity:.2f} sent to Firebase---------------")
 
-# Function to check for leakage based on distance increase and flow rate 0
+# Function to check for leakage based on distance increase over time
 def check_for_leakage(distance):
-    global previous_distances, last_flow_rate
-    if last_flow_rate == 0:
-        previous_distances.append(distance)
+    global initial_distance_at_zero_flow, leakage_check_active
 
-        # Keep only the last 3 distance readings
-        if len(previous_distances) > 3:
-            previous_distances.pop(0)
-
-        # Check if there's an increase in distance for all readings
-        if len(previous_distances) == 3 and previous_distances[0] < previous_distances[1] < previous_distances[2]:
-            print(f"Leakage detected! Distances: {previous_distances}")
+    if leakage_check_active:
+        distance_change = distance - initial_distance_at_zero_flow
+        if distance_change >= leakage_threshold:
+            print(f"Leakage detected! Distance increased by {distance_change:.2f} cm.")
             detect_leakage()
+            leakage_check_active = False  # Stop leakage monitoring once leakage is detected
+        else:
+            print(f"No significant distance change. Distance increased by {distance_change:.2f} cm.")
+
+
 
 while True:
     line = ser.readline().decode('utf-8').strip()
@@ -174,26 +174,19 @@ while True:
             flow_rate = float(flow_rate_str)
             print(f"Current Flow Rate: {flow_rate} L/min")
 
-            if flow_rate > 0 and not flow_started:
-                start_time = time.time()
-                flow_started = True
-                total_flow = 0.0
+            # Flow rate has started, reset leakage monitoring
+            if flow_rate > 0:
+                if leakage_check_active:
+                    print("Flow resumed. Stopping leakage check.")
+                    leakage_check_active = False
+                last_flow_rate = flow_rate  # Update the flow rate
 
-            if flow_started:
-                elapsed_time = (time.time() - start_time) / 60.0
-                total_flow += flow_rate * elapsed_time
-                start_time = time.time()
-
-            if flow_rate == 0 and flow_started:
-                flow_started = False
-                if total_flow > 0:
-                    total_flow = round(total_flow, 2)
-                    print(f"---------------Total consumed: {total_flow:.2f} liters---------------")
-                    send_consumption_firebase(total_flow)
-                    print("Consumption sent to Database")
-                total_flow = 0.0
-
-            last_flow_rate = flow_rate
+            # Flow rate has stopped, start leakage monitoring
+            elif flow_rate == 0 and last_flow_rate > 0:
+                print("Flow stopped. Starting leakage check.")
+                initial_distance_at_zero_flow = None  # Reset the initial distance for fresh monitoring
+                leakage_check_active = True  # Activate leakage check
+                last_flow_rate = flow_rate
 
         # Handle distance
         elif 'Distance:' in line:
@@ -201,13 +194,14 @@ while True:
             distance = float(distance_str)
             print(f"Current Distance: {distance} cm")
 
-            if (time.time() - distance_start_time) >= 120:  # 2 minutes
-                send_distance_to_firebase(distance)
-                distance_start_time = time.time()
+            if leakage_check_active:
+                if initial_distance_at_zero_flow is None:
+                    initial_distance_at_zero_flow = distance  # Set initial distance for leakage monitoring
+                    print(f"Initialized distance for leakage check: {initial_distance_at_zero_flow:.2f} cm")
+                else:
+                    check_for_leakage(distance)  # Continuously check for leakage
 
-            check_for_leakage(distance)  # Check for leakage
-
-            last_distance = distance
+            send_distance_to_firebase(distance)
 
         # Handle pH Value
         elif 'pH Value:' in line:

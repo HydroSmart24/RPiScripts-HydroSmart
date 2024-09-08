@@ -112,8 +112,7 @@ def send_distance_to_firebase(distance):
             for doc in docs[3:]:
                 print(f"Deleting old document: {doc.id}")
                 db.collection('avgDistance').document(doc.id).delete()
-        else:
-            print("Less than or equal to 3 documents. No deletion required.")
+        
     except Exception as e:
         print(f"Error cleaning up avgDistance collection: {e}")
 

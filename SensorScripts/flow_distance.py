@@ -185,7 +185,7 @@ while True:
             distance = float(distance_str)
             print(f"Current Distance: {distance} cm")
 
-            if (time.time() - distance_start_time) >= 180:  #3 seconds
+            if (time.time() - distance_start_time) >= 120:  #2 minutes
                 send_distance_to_firebase(distance)
                 distance_start_time = time.time()
 

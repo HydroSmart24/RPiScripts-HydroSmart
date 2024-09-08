@@ -252,7 +252,7 @@ while True:
         if (time.time() - ph_start_time) >= 600:
             if ph_values and turbidity_values:
                 avg_ph = sum(ph_values) / len(ph_values)
-                avg_turbidity = sum(turbidity_values) / len(turbidity_values)
+                avg_turbidity = (sum(turbidity_values) / len(turbidity_values)) - 4
                 send_filter_health_to_firebase(avg_ph, avg_turbidity)
 
             # Reset for the next 10 minutes

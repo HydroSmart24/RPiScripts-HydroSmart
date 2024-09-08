@@ -25,10 +25,11 @@ start_time = 0
 total_flow = 0.0
 last_flow_rate = 0.0
 
-
 initial_distance_at_zero_flow = None  # Track initial distance when flow rate goes to 0
 leakage_check_active = False  # Flag to check if leakage monitoring is active
 leakage_threshold = 1.0  # Minimum distance change (in cm) to detect leakage
+distance_last_sent_time = time.time()  # Track the time when the last distance was sent
+distance_interval = 120  # 2 minutes (in seconds) interval for sending distance to Firebase
 ph_values = []
 turbidity_values = []
 ph_start_time = time.time()
@@ -194,6 +195,11 @@ while True:
             distance = float(distance_str)
             print(f"Current Distance: {distance} cm")
 
+            # Send distance to Firebase every 2 minutes
+            if (time.time() - distance_last_sent_time) >= distance_interval:
+                send_distance_to_firebase(distance)
+                distance_last_sent_time = time.time()
+
             if leakage_check_active:
                 if initial_distance_at_zero_flow is None:
                     initial_distance_at_zero_flow = distance  # Set initial distance for leakage monitoring
@@ -201,7 +207,6 @@ while True:
                 else:
                     check_for_leakage(distance)  # Continuously check for leakage
 
-            send_distance_to_firebase(distance)
 
         # Handle pH Value
         elif 'pH Value:' in line:

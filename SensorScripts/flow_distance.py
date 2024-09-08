@@ -189,7 +189,7 @@ while True:
                 send_distance_to_firebase(distance)
                 distance_start_time = time.time()
 
-            if last_flow_rate == 0 and (distance - last_distance) > 5:
+            if last_flow_rate == 0 and (distance - last_distance) > 2:
                 detect_leakage()
 
             last_distance = distance

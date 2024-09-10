@@ -197,8 +197,7 @@ while True:
                 total_flow = 0.0
 
             # Handle leakage logic when flow rate is 0
-            if flow_rate == 0 and not monitoring_for_leakage:
-                # Start monitoring for leakage when flow becomes zero
+            if flow_rate == 0 and not monitoring_for_leakage:                # Start monitoring for leakage when flow becomes zero
                 initial_distance_at_zero_flow = last_distance
                 monitoring_for_leakage = True
                 print(f"Flow stopped. Monitoring for leakage with initial distance: {initial_distance_at_zero_flow:.2f} cm")
@@ -211,7 +210,7 @@ while True:
             distance = float(distance_str)
             print(f"Current Distance: {distance} cm")
 
-            if (time.time() - distance_start_time) >= 120:  #2 minutes
+            if (time.time() - distance_start_time) >= 120:  # 2 minutes
                 send_distance_to_firebase(distance)
                 distance_start_time = time.time()
 
@@ -235,7 +234,12 @@ while True:
         elif 'Turbidity:' in line:
             turbidity_str = line.split('Turbidity: ')[1].split(' NTU')[0]
             turbidity = float(turbidity_str)
-            turbidity_values.append(turbidity)  # Collect turbidity values for averaging
+
+            # Cap the turbidity value at 10 NTU
+            if turbidity > 10:
+                turbidity = 10.0
+            
+            turbidity_values.append(turbidity)  # Collect capped turbidity values for averaging
             print(f"Current Turbidity: {turbidity} NTU")
 
         # Handle Relay State
@@ -243,7 +247,7 @@ while True:
             relay_state = line.split('Relay State: ')[1]
             print(f"Relay State: {relay_state}")
 
-             # Call the function to handle relay state change
+            # Call the function to handle relay state change
             handle_relay_state_change(relay_state)
 
             print(f"-----------------------------------")
@@ -253,6 +257,11 @@ while True:
             if ph_values and turbidity_values:
                 avg_ph = sum(ph_values) / len(ph_values)
                 avg_turbidity = (sum(turbidity_values) / len(turbidity_values)) - 4
+
+                # Cap the average turbidity value at 10 before sending it to Firebase
+                if avg_turbidity > 10:
+                    avg_turbidity = 10.0
+
                 send_filter_health_to_firebase(avg_ph, avg_turbidity)
 
             # Reset for the next 10 minutes
